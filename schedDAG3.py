@@ -67,7 +67,7 @@ class schedDAG3:
         #pd.set_option('display.max_colwidth', -1)
         
         
-        print(self.schedVarsP[['taskID_1','taskID_2', 'costVar']])
+        print(self.schedVarsP[['taskID_1','taskID_2', 'costVar', 'startVar', 'finishVar']])
         '''
         for i in range(nTotal):
             for j in range(i, nTotal):
@@ -124,6 +124,9 @@ class schedDAG3:
             exprScheduled = LinExpr()
             for j in range(i, self.dag.nTotal):
                 subTask2=taskSystem.allTasks[j]
+                
+                #code will be more efficient if I can avoid creating vars
+                #for precedence-constrainted subtasks
                 if i in subTask2.predList:
                     continue
                 maxCost=max(subTask1.allCosts[j], subTask2.allCosts[i])
@@ -131,7 +134,7 @@ class schedDAG3:
                 var = self.solver.addVar(lb=0, ub=1, vtype=GRB.BINARY)
                 costVar=self.solver.addVar(vtype=GRB.INTEGER)
                 self.solver.addConstr(lhs=costVar, rhs=var*maxCost, sense=GRB.EQUAL)
-                startVar=self.solver.addVar(lb=0, ub=deadline-1, vtype=GRB.INTEGER)
+                startVar=self.solver.addVar(lb=0, ub=deadline, vtype=GRB.INTEGER)
                 finishVar=self.solver.addVar(lb=0, ub=deadline, vtype=GRB.INTEGER)
                 
                 self.schedVars['taskID_1'].append(i)
@@ -141,6 +144,7 @@ class schedDAG3:
                 self.schedVars['startVar'].append(startVar)
                 self.schedVars['finishVar'].append(finishVar)
                 
+                #if two tasks are not co-scheduled, then the corresponding finish var can take any value
                 self.solver.addConstr(lhs=finishVar, rhs=startVar+subTask1.allCosts[j]*var,
                                       sense=GRB.GREATER_EQUAL)
 
@@ -177,43 +181,75 @@ class schedDAG3:
         
         self.schedVarsP=pd.DataFrame(self.schedVars)
         
-                #every task is scheduled
+        #everything is scheduled
         for i in range(self.dag.nTotal):
+            subTask1=self.dag.allTasks[i]
             schedVars_I=self.schedVarsP[(self.schedVarsP['taskID_1']==i)]
             exprTaskScheduled=LinExpr()
             #sum is at least one
+            #for each row in schedVars i
+            for k in range(schedVars_I.shape[0]):
+                exprTaskScheduled+=schedVars_I['schedVar'].iloc[k]
+            #end k loop
+            '''
             for j in range(self.dag.nTotal):
-                exprTaskScheduled+=schedVars_I['schedVar'].iloc[j]
+                subTask2=self.dag.allTasks[j]
+                if not (j in subTask2.predList or i in subTask1.predList):
+                    exprTaskScheduled+=schedVars_I['schedVar'].iloc[j]
             #end j loop
+            '''
             self.solver.addConstr(lhs=exprTaskScheduled, rhs=1, sense=GRB.EQUAL)
         #end i loop
         
         #determine costs
         exprTotalCost=LinExpr()
         for i in range(self.dag.nTotal):
+            subTask1=self.dag.allTasks[i]
+            schedVars_I=self.schedVarsP[(self.schedVarsP['taskID_1']==i)]
+            noDuplicates=schedVars_I[(schedVars_I['taskID_2']>=i)]
+            for k in range(noDuplicates.shape[0]):
+                exprTotalCost += noDuplicates['costVar'].iloc[k]
+            
+            
+        '''    
+        self.solver.addConstr(lhs=exprTotalCost, rhs=self.varTotalCost, sense=GRB.EQUAL)
+        schedVars_I=self.schedVarsP[(self.schedVarsP['taskID_1']==i)]
+        noDuplicates=self.schedVarsP[(self.schedVarsP['taskID_1']<=['taskID_2'])]
+        for c in noDuplicates['costVar']:
+            exprTotalCost+=c
+        '''
+        self.solver.addConstr(lhs=exprTotalCost, rhs=self.varTotalCost, sense=GRB.EQUAL)
+            
+        '''
+        for i in range(self.dag.nTotal):
+            subTask1=self.dag.allTasks[i]
             schedVars_I=self.schedVarsP[(self.schedVarsP['taskID_1']==i)]
             exprCost=LinExpr()
             #sum is at least one
             for j in range(i, self.dag.nTotal):
-                exprTotalCost+=schedVars_I['costVar'].iloc[j]
+                subTask2=self.dag.allTasks[j]
+                if not (j in subTask2.predList or i in subTask1.predList):
+                    exprTotalCost+=schedVars_I['costVar'].iloc[j]
             #end j loop
         #end i loop
         self.solver.addConstr(lhs=exprTotalCost, rhs=self.varTotalCost, sense=GRB.EQUAL)
-        
-        
+        '''
+
         #add precedence constraints
         for i in range(self.dag.nTotal):
             subTask1=self.dag.allTasks[i]
-            startVarList=self.schedVarsP[(self.schedVarsP['taskID_1']==i)]['startVar']
+            startVarList=self.schedVarsP[(self.schedVarsP['taskID_1']==i)]
             for p in subTask1.predList:
                 #all startVars for subTask 1 >= all finish vars for p
-                finVarList=self.schedVarsP[(self.schedVarsP['taskID_1']==p)]['finishVar']
-                for s in startVarList:
-                    for f in finVarList:
-                        self.solver.addConstr(lhs=s, rhs=f, sense=GRB.GREATER_EQUAL)
+                #print("Adding precedence constraint:")
+                #print("Constraint: ", p, " preceeds ", i)
+                finVarList=startVarList[(startVarList['taskID_2']==p)]['finishVar']
+                for s in startVarList['startVar']:
+                    for predFinish in finVarList:
+                        self.solver.addConstr(lhs=s, rhs=predFinish, sense=GRB.GREATER_EQUAL)
             #end p loop
         #end i loop
-        
+
 
 
  

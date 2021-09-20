@@ -40,7 +40,7 @@ FAIL=3
 #create task system
 class dagTask:
           #test=TaskSet(targetUtil, utilMin, utilMax, periodMin, periodCount, symMean, symDev, symDistrib, m, timeout, solutionLimit, lowerBound, upperBound)
-    def __init__(self, targetCost, minCost, maxCost, deadline, 
+    def __init__(self, targetCost, minCost, maxCost, deadline, predProb,
                                        symParam1, symParam2, symParam3, symDistrib, 
                                        timeout, solutionLimit, threadsPerTest):
         
@@ -89,9 +89,12 @@ class dagTask:
         self.allTasks=[]
         self.totalCost = 0
         while self.totalCost < targetCost:
-            self.addTask()   
-        
+            self.addTask() 
+        print("Total tasks: ", self.nTotal)
+        if predProb>0:
+            self.ErdoRenyiCreateDag(predProb)
         self.assignPairCosts()
+        
         
         
 
@@ -119,8 +122,22 @@ class dagTask:
    # can be found in CERTMT_sched.py
    # def testSystem(self, runBaseline, runCertMT):
 
-
-
+    def ErdoRenyiCreateDag(self, p):
+        for i in range(self.nTotal):
+            for j in range(i):
+                if random()<p:
+                    self.allTasks[i].predList.append(j)
+                    #print(j, " Preceeds ", i)
+                    #self.addToPredList(i, j)
+    
+    #making each task's pred list include all its ancestors
+    #means fewer Gurobi variables=faster execution
+    '''
+    def addToPredList(self, i, pred):
+        self.allTasks[i].predList.append(pred)
+        for ancestor in self.allTasks[pred].predList:
+            self.addToPredList(i, ancestor)
+    '''
     def assignPairCosts(self):
         '''
         for i in range(self.nTotal):
@@ -211,7 +228,7 @@ class subTask:
         self.cost = cost
         self.permID = permID
         self.allCosts=[]
-        self.predList=[-1]
+        self.predList=[]
 
 
 '''
@@ -254,19 +271,21 @@ def main():
     symParam3=.1
     #m=4
     timeout=60
-    solutionLimit=10000
+    solutionLimit=1000
     #lowerBound=0
     #upperBound=100
     threadsPerTest=0
     
-    targetCost=10000
+    targetCost=5000
     minCost=5
     maxCost=15
-    deadline=200
+    deadline=100
+    #0.2 was value used by Dinh et al 2020
+    predProb=.2
 
     
     
-    myDAG = dagTask(targetCost, minCost, maxCost, deadline, 
+    myDAG = dagTask(targetCost, minCost, maxCost, deadline, predProb,
                                        symParam1, symParam2, symParam3, symDistrib, 
                                        timeout, solutionLimit, threadsPerTest)
     
