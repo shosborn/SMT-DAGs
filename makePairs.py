@@ -88,7 +88,7 @@ class makePairs:
                                    ][['taskID_1', 'taskID_2']]
         else:
             resultDF = self.schedVarsP[(self.schedVarsP['result'] == True)
-                                   ][['taskID_1', 'taskID_2', 'costVar', 'startVar', 'finishVar']]
+                                   ][['taskID_1', 'taskID_2', 'costVar', 'startVar', 'finishVar1', 'finishVar2']]
         #print(resultDF)
         print(resultDF)
         #print(self.schedVarsP[(self.schedVarsP['result']==1)]['taskID_1','taskID_2'])
@@ -150,11 +150,13 @@ class makePairs:
                 self.schedVars['costVar'].append(costVar)
                 self.schedVars['startVar'].append(startVar)
                 self.schedVars['finishVar1'].append(finishVar1)
-                self.schedVars['finishVar2'].append(finishVar1)
+                self.schedVars['finishVar2'].append(finishVar2)
                 
                 #if two tasks are not co-scheduled, then the corresponding finish var can take any value
-                self.solver.addConstr(lhs=finishVar2, rhs=startVar+subTask2.allCosts[i]*var,
-                                      sense=GRB.GREATER_EQUAL)
+                self.solver.addConstr(lhs=finishVar1, rhs=(startVar+subTask1.allCosts[j])*var,
+                                      sense=GRB.EQUAL)
+                self.solver.addConstr(lhs=finishVar2, rhs=(startVar+subTask2.allCosts[i])*var,
+                                      sense=GRB.EQUAL)
 
                 
                 
@@ -215,12 +217,16 @@ class makePairs:
                 for j in range(schedVars_I.shape[0]):
                     startVar=schedVars_I['startVar'].iloc[j]
                     for k1 in range(schedVars_P1.shape[0]):
-                        finishVar=schedVars_P1['finishVar1'].iloc[k1]
-                        self.solver.addConstr(lhs=startVar, rhs=finishVar, sense=GRB.GREATER_EQUAL)
+                        finishVar1=schedVars_P1['finishVar1'].iloc[k1]
+                        #schedVar=schedVars_P1['schedVar'].iloc[k1]
+                        #self.solver.addConstr(lhs=startVar, rhs=finishVar1*schedVar, sense=GRB.GREATER_EQUAL)
+                        self.solver.addConstr(lhs=startVar, rhs=finishVar1, sense=GRB.GREATER_EQUAL)
                     for k2 in range(schedVars_P2.shape[0]):
-                        finishVar=schedVars_P2['finishVar2'].iloc[k2]
-                        self.solver.addConstr(lhs=startVar, rhs=finishVar, sense=GRB.GREATER_EQUAL)
-           
+                        finishVar2=schedVars_P2['finishVar2'].iloc[k2]
+                        #schedVar=schedVars_P2['schedVar'].iloc[k2]
+                        #self.solver.addConstr(lhs=startVar, rhs=finishVar2*schedVar, sense=GRB.GREATER_EQUAL)
+                        self.solver.addConstr(lhs=startVar, rhs=finishVar2, sense=GRB.GREATER_EQUAL)
+         
 
 
 

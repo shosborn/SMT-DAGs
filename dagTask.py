@@ -378,6 +378,7 @@ class dagTask:
         runningList = []
         eventTimes = []
         completed = []
+        coresInUse = []
         schedByCore=[[]for c in range(0, totalCores)]
         
         time=0
@@ -408,6 +409,7 @@ class dagTask:
                         
                     
                 if p.finish[0]<=time and p.finish[1]<=time:
+                    coresInUse.remove(p.core)
                     coresUsed-=1
                     runningList.remove(p)
             
@@ -429,13 +431,20 @@ class dagTask:
             #start new tasks runninning
             while len(readyList)>0 and coresUsed < totalCores:
                 cur=readyList.pop()
-                cur.core=coresUsed
+                for findFreeCore in range(totalCores):
+                    if findFreeCore not in coresInUse:
+                        cur.core=findFreeCore
+                        schedByCore[findFreeCore].append(cur)
+                        coresUsed+=1
+                        coresInUse.append(findFreeCore)
+                        break
+                        
                 cur.start=time
                 cur.finish[0]=time+cur.costs[0]
                 cur.finish[1]=time+cur.costs[1]
                 runningList.append(cur)
-                schedByCore[coresUsed].append(cur)
-                coresUsed+=1
+                
+                
                 if cur.finish[0]>deadline or cur.finish[1]>deadline:
                     # reset pairs
                     for p in self.pairList:
@@ -631,7 +640,7 @@ def main():
     targetCost=5000
     minCost=5
     maxCost=15
-    deadline=75000
+    deadline=80000
     #0.2 was value used by Dinh et al 2020
     predProb=.2
     
@@ -659,7 +668,7 @@ def main():
     pairs.setSolverParams()
     pairs.createSchedVars()
     pairs.solver.optimize()
-    pairs.printSolution('short')
+    pairs.printSolution('long')
     pairIDList=pairs.getPairList()
     myDAG.pairList=[]
     for p in pairIDList:
@@ -676,6 +685,7 @@ def main():
         result=myDAG.schedulePairs(cores, copy.copy(myDAG.pairList))
         #result=myDAG.schedulePairs(5)
         scheduled=result[0]
+        print("Deadline: ", deadline)
         if scheduled: 
             print("Cores needed: ", cores)
             schedByCore=result[1]
@@ -688,7 +698,7 @@ def main():
                 
         cores+=1
         # end while
-    print("DAG infeasible.")
+    if not scheduled: print("DAG infeasible.")
         
         
         
