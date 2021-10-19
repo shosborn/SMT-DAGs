@@ -24,6 +24,10 @@ from random import random, gauss, uniform, choice
 from numpy.random import lognormal
 import pandas as pd
 
+#used to copy template C file to a new destination file
+import shutil
+import os
+
 
 UNIFORM=1
 SPLIT_UNIFORM=2
@@ -40,7 +44,13 @@ INFINITY=float('inf')
     
         
 
+'''
+New input parameters: numNodes, nodeUtilDistrib, smtDistrib
 
+
+New setUp: initialize DAG then build randomly or from files
+
+'''
 class dagTask:
     #create task system to approximate a specified total cost with randomly-determined
     #costs, SMT costs, and precedence constraints (from supplied parameters)
@@ -619,6 +629,43 @@ test=CERTMT_TaskSystem(targetUtil, utilMin, utilMax, periodMin, periodCount, sym
 test.testSystem()
 '''
 
+
+'''
+Key steps handled here:
+---Set or get parameters: DAG total util, SMT friendliness, DAG num tasks, likelihood of connections.
+---Create DAG from file or randomized.
+---Run through ILP to reduce utilization.  Optional: try with different deadlines or other tunable parameters.
+---Find core count.
+
+Q1: How much can we reduce a DAG's utilization?
+    
+Q2: How much can we reduce a DAG's core requirement/ increase its schedulability?
+Q3: How much can we reduce a system's utilization (is this really any different from Q1?)
+Q4: How much can we reduce a system's core requirement/ increase its schedulability?
+
+---All output should be to a CSV with each row representing one Graph (or one line on graph.)
+--- 
+'''
+
+def printToCSV():
+    '''
+    Input parameters:
+    dagID numNodes nodeUtilDis smtFriendliness ErdosRenyiP
+    
+    DAG characteristics
+    Length Deadlines(plural; deadline is a function of length)
+    
+    For each deadline
+    smtUtil percentReduced gurobiTime
+    
+    Seperate file for tracking cores used?
+    dagID totalUtil deadline coresUsed
+    
+    for each combo of pseudoDeadline, schedMethod:
+        smtCoresUsed percentReduced
+    
+    '''
+
 def main():
     #parameterrs for testing
     #targetUtil=16
@@ -640,7 +687,12 @@ def main():
     targetCost=5000
     minCost=5
     maxCost=15
-    deadline=80000
+    deadline=74000
+    
+    #Idea: use binary search deadline to find pseudoDeadline in range(
+    #crit path, trueDeadline)
+    #that minimizes cores needed
+    
     #0.2 was value used by Dinh et al 2020
     predProb=.2
     
@@ -664,6 +716,8 @@ def main():
     
     If we exclude the print method, total cost = 128180.  Applying SMT gets it down to 77786.
     '''
+    
+    # Make pairs using the ILP
     pairs=ILP.makePairs(myDAG)
     pairs.setSolverParams()
     pairs.createSchedVars()
@@ -678,12 +732,10 @@ def main():
     scheduled=False
     cores=1
     # could streamline this by getting/ calculating the width
+    
+    # Now that we have the pairs, compute a schedule using Graham's list.
     while not scheduled and cores <=myDAG.nTotal:
-        #copyPairList=m
-        
-        #copy is causing problems
         result=myDAG.schedulePairs(cores, copy.copy(myDAG.pairList))
-        #result=myDAG.schedulePairs(5)
         scheduled=result[0]
         print("Deadline: ", deadline)
         if scheduled: 
@@ -699,6 +751,76 @@ def main():
         cores+=1
         # end while
     if not scheduled: print("DAG infeasible.")
+    
+    # output C code that implements the schedule computed above.
+    
+    '''
+    Inputs:
+        result[1], i.e. schedByCores
+        allTasks, to allow me to get task names
+        
+        For each core used:
+            create 2 pthreads
+            
+        For each pthread:
+            call subtasks in order where there start.
+            As each subtask completes, signal all its predecessors (broadcast?)
+            Before each subtask starts, it needs to wait on a signal from its predecessors.
+            
+        Starting file: edit the original C file to not have a main method.
+        I'm writing a new main method onto that file.
+        
+        What is success?
+            ---All precedence and synchronization requirements respected.
+            ---Weak success: The total execution time is never greater than the
+            deadline, across many runs.
+            ---Strong success: Total execution time assuming each pair hits its
+            worst observed case at the same time is no greater than the deadline.
+        What data do we need?
+            ---all runtimes for each pair (remember we can't assume order for
+            pairs on different cores; careful with the record keeping.)
+            ---start-end time (excluding cache flushes.)  May be easier to compute
+            after run is complete.
+            ---Not sure I can just ignore cache-flush costs once we go multicore.
+            
+        Concerning cache-flush:
+            ---will negatively affect running jobs; flushes ALL the cache.
+            ---could cause excess waiting if we have complex precedence constraints.
+            ---Not having cache flush should be acceptable for multicore jobs.
+            If single-core jobs are preemptable, even between subtasks, 
+            then they need cache flush in place.
+            ---subjobs on different cores or executing in different orders
+            than initial timing run may be subject to cache effects.
+            ---omitting cache flush may change optimal pairings.
+            
+        What if I flush caches in the timing run but not in the scheduled run?
+        ---Scheduled run results should be valid as long as non-preemptivity is maintained.
+        ---not clear that timing run is still a good guide for the scheduled run.
+        
+        What if I only flush cache between dag jobs on timing run?
+        ---schedRun subjobs that go out of order or on different cores may take
+        longer than in timing run, especially with cache isolation in place.
+        
+        Decision: Do both the timing and execution runs without cache wiping
+        between subjobs.  Consider iterative approach if results are too far apart.
+            
+        
+        pthreads need to be per-process, not per-core?
+        
+        Goal broken down:
+            --without SMT: execute a given process an a pre-determined core only after
+            other processes have been completed.
+            --with SMT: as above, but also beginning at the exact same time as a process on
+            another core.
+        
+        Output:
+            CSV
+        '''
+
+            
+        
+
+
         
         
         
@@ -714,11 +836,11 @@ if __name__== "__main__":
 To-Do:
     -Report results of pairing ILP in useful form. DONE
     -Build a schedule consisting of core assignments + per-core sequence
-    -Graham's list? Another ILP?
+    -Graham's list? Another ILP? DONE
     ---Minimize cores needed subject to: everything scheduled; 
-    deadline respected; pred constraints respected
+    deadline respected; pred constraints respected DONE (not true minimization)
     ---Never minimize number of subtasks scheduled simultaneously
-    -Express schedule as a C program.
+    -Express schedule as a C program.  TO-DO.
     
     --get a list of the variables that are paired together.
     --Use to define a new ILP
