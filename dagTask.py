@@ -89,10 +89,11 @@ class dagTask:
         #relies on tasks being topologically ordered
         self.length=0
         for t in self.allTasks:
-            t.minStart=t.cost
+            t.minFinish=t.cost
             for pred in t.predList:
-                t.minStart=max(t.minStart, self.allTasks[pred].minStart+t.cost)
-            self.length=max(t.minStart, self.length)
+                t.minStart=max(t.minStart, self.allTasks[pred].minFinish+t.cost)
+            t.minFinish=t.minStart + t.cost
+            self.length=max(t.minFinish, self.length)
 
         # we're going to want to try some different deadlines
         # pseudo deadline should be a solver param, not a dag param
@@ -666,7 +667,8 @@ class subTask:
         # 1 = temp
         # 2 = permanent
         self.mark=0
-        self.minCompletion=0
+        self.minStart=0
+        self.minFinish=0
 
 
 
