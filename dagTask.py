@@ -1,4 +1,5 @@
 
+import rtasConstants as constants
 import makePairs as ILP
 import xml.etree.ElementTree as ET
 import csv
@@ -9,7 +10,9 @@ from random import random, gauss, uniform, choice
 #from numpy.random import lognormal
 #import numpy as np
 import pandas as pd
+import math
 
+'''
 INFINITY=float('inf')
 # possibilites for cost distribution
 NARROW=0
@@ -20,6 +23,7 @@ WIDE=2
 OPTIMIST=0
 OK=1
 PESSIMIST=2
+'''
     
         
 
@@ -361,11 +365,11 @@ class dagTask:
         #tasks are zero-indexed
         self.nTotal = permID = len(self.allTasks)
         dist=self.nodeUtilDist
-        if dist==NARROW:
+        if dist==constants.NARROW:
             cost = uniform(1, 2)
-        elif dist==MEDIUM:
+        elif dist==constants.MEDIUM:
             cost = uniform(1, 10)
-        elif dist==WIDE:
+        elif dist==constants.WIDE:
             cost = uniform(1, 20)
         task = subTask(cost, permID)
         self.allTasks.append(task)
@@ -384,7 +388,7 @@ class dagTask:
             print("predList: ", task.predList)
             print()
             
-    def schedulePairs(self, totalCores, waitingList):
+    def schedulePairs(self, totalCores, waitingList, r):
         #waitingList = self.pairList
         readyList = []
         runningList = []
@@ -463,6 +467,10 @@ class dagTask:
             '''
             #start new tasks runninning
             while len(readyList)>0 and coresUsed < totalCores:
+                
+                # sort readylist
+                readyList.sort(key=lambda x: x.pairCost, reverse=r)
+                
                 cur=readyList.pop()
                 for findFreeCore in range(totalCores):
                     if findFreeCore not in coresInUse:
@@ -483,8 +491,8 @@ class dagTask:
                     # reset pairs
                     for p in self.pairList:
                         p.remainingPredList=copy.copy(p.predList)
-                        p.finish=[INFINITY, INFINITY]
-                        p.start=[INFINITY, INFINITY]
+                        p.finish=[constants.INFINITY, constants.INFINITY]
+                        p.start=[constants.INFINITY, constants.INFINITY]
                         p.core=-1
                     
                     return (False, schedByCore)
@@ -548,12 +556,12 @@ class dagTask:
 
         dist=self.smtDist
 
-        if dist==OPTIMIST:
+        if dist==constants.OPTIMIST:
             minMult=uniform(1, 1.8)
             #based on DIS results in SMT + MC^2
             maxMult=gauss(0.34, 0.2)
 
-        elif dist==OK:
+        elif dist==constants.OK:
             #based on San Diego Vision in SMT + MC^2
             if uniform(0, 1)<0.05:
                 minMult=maxMult=10
@@ -561,7 +569,7 @@ class dagTask:
                 minMult=uniform(1.1, 1.8)
                 maxMult=gauss(.52, .17)
 
-        elif dist==PESSIMIST:
+        elif dist==constants.PESSIMIST:
             #based on RTCSA and ECRTS pessimistic (worse than anything observed in SMT + MC^2)
             if uniform(0, 1)<0.2:
                 minMult=maxMult=10
@@ -572,6 +580,53 @@ class dagTask:
         #follows from previous work
         maxMult=max(maxMult, 0.01)
         return(minMult, maxMult)
+        
+    #no pairs, i.e. each task paired with itself
+    def makeBaselinePairList(self):
+        self.pairList=[]
+        for t in self.allTasks:
+            self.pairList.append(taskPair(t, t))
+            
+    def makeSmtPairList(self, pairIDList):
+        self.pairList=[]
+        #pairIDList=pairs.getPairList()
+
+        for p in pairIDList:
+            task1=self.allTasks[p[0]]
+            task2=self.allTasks[p[1]]
+            self.pairList.append(taskPair(task1, task2))
+            
+    def howManyCores(self):
+        cores=math.ceil(self.totalCost/self.deadline)
+        
+        for r in [True, False]: #should ready list be ordered ascending or descending?
+            scheduled=False
+            while not scheduled and cores <=self.nTotal:
+                # debug code: just check the last loop
+                #cores=myDAG.nTotal
+                result=self.schedulePairs(cores, copy.copy(self.pairList), r)
+                scheduled=result[0]
+                #print("Deadline: ", myDAG.deadline)
+                if scheduled:
+                    continue
+                    '''
+                    print("Cores needed: ", cores)
+                    schedByCore=result[1]
+                    for c in range(cores):
+                        print("Pairs on core ", c)
+                        for p in schedByCore[c]:
+                            print(p.IDs[0], p.IDs[1], "start=", p.start, "finish=", 
+                                  max(p.finish[0], p.finish[1]))
+                        print()
+                    '''
+                else: cores+=1
+            # end while
+            if r: cores1=cores
+            else: cores2=cores
+        #end r loop
+        return min(cores1, cores2)
+        
+        
 
 class protoTask:
     def __init__(self, name, predNameList):
@@ -588,10 +643,11 @@ class protoTask:
 class taskPair:
     def __init__(self, task1, task2):
         self.IDs=[task1.permID, task2.permID]
-        self.start=INFINITY
-        self.finish=[INFINITY, INFINITY]
+        self.start=constants.INFINITY
+        self.finish=[constants.INFINITY, constants.INFINITY]
         self.costs=[task1.allCosts[task2.permID], 
                     task2.allCosts[task1.permID]]
+        self.pairCost=max(self.costs[0], self.costs[1])
         self.predList=list(set(task1.predList + task2.predList))
         self.remainingPredList=copy.copy(self.predList)
         self.core=-1   
@@ -673,7 +729,7 @@ def main():
         while not scheduled and cores <=myDAG.nTotal:
             # debug code: just check the last loop
             #cores=myDAG.nTotal
-            result=myDAG.schedulePairs(cores, copy.copy(myDAG.pairList))
+            result=myDAG.schedulePairs(cores, copy.copy(myDAG.pairList), True)
             scheduled=result[0]
             print("Deadline: ", myDAG.deadline)
             if scheduled: 
