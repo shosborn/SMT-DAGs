@@ -28,9 +28,9 @@ class makePairs:
         self.solver.setParam("SolutionLimit", solutionLimit)
         self.solver.setParam(GRB.Param.Threads, threadsPerTest)
         #For fastest peformance, set lb=ub=1
-        coreLB=1
+        #coreLB=1
         #coreUB=(self.dag.totalCost/self.dag.deadline)*2 + 1
-        coreUB=100
+        #coreUB=100
         #self.varCoreCount=self.solver.addVar(lb=coreLB, ub=coreUB, vtype=GRB.INTEGER)
         #self.solver.setObjective(self.varCoreCount, GRB.MINIMIZE)
         #self.varTotalCost=self.solver.addVar(vtype=GRB.INTEGER)
