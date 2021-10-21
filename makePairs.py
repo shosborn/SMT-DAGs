@@ -22,11 +22,11 @@ class makePairs:
     #print("Testing if arguments work.")
     #print(taskSystem.allTasks[1].allCosts[5])
      
-    def setSolverParams(self, timeLimit, solutionLimit, threadsPerTest):
+    def setSolverParams(self):
         #taskSystem=self.taskSystem
-        self.solver.setParam("TimeLimit", timeLimit)
-        self.solver.setParam("SolutionLimit", solutionLimit)
-        self.solver.setParam(GRB.Param.Threads, threadsPerTest)
+        #self.solver.setParam("TimeLimit", timeLimit)
+        #self.solver.setParam("SolutionLimit", solutionLimit)
+        #self.solver.setParam(GRB.Param.Threads, threadsPerTest)
         #For fastest peformance, set lb=ub=1
         #coreLB=1
         #coreUB=(self.dag.totalCost/self.dag.deadline)*2 + 1
