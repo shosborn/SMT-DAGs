@@ -87,11 +87,11 @@ class dagTask:
 
         #either way, calculate length
         #relies on tasks being topologically ordered
+        #minFinish and minStart both default to 0
         self.length=0
         for t in self.allTasks:
-            t.minFinish=t.cost
             for pred in t.predList:
-                t.minStart=max(t.minStart, self.allTasks[pred].minFinish+t.cost)
+                t.minStart=max(t.minStart, self.allTasks[pred].minFinish)
             t.minFinish=t.minStart + t.cost
             self.length=max(t.minFinish, self.length)
 
