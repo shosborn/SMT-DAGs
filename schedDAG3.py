@@ -7,7 +7,6 @@ Created on Thu Oct 17 08:53:41 2019
 
 
 # need to have a fully defined DAG before this can run.
-
 from gurobipy import *
 #from random import random, gauss, uniform, choice
 import pandas as pd

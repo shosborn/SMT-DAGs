@@ -18,11 +18,12 @@ import copy
 #import MultiFrameNoSMT_sched as multi
 #import OneFrameSizeSMT_sched as oneFrame
 #import fullPreemption2_sched as fullPreempt
-
 from gurobipy import *
 from random import random, gauss, uniform, choice
 from numpy.random import lognormal
 import pandas as pd
+
+import math
 
 #used to copy template C file to a new destination file
 import shutil
@@ -93,7 +94,156 @@ class dagTask:
             self.ErdoRenyiCreateDag(predProb)
         self.assignPairCosts()
         '''       
+
+    
+    def buildDagFromFilesSB_VBS(self, predConstraintsFile, baselineCostFile, smtCostFile):
+        self.protoTaskDict={}
         
+        #create protoTasks from xml file
+        tree = ET.parse(predConstraintsFile)
+        root = tree.getroot()
+        for xmlTask in root.iter("task"):
+            name=xmlTask.get("id")
+            if self.excludePrinters:
+                if "print" in name: continue
+            #print("Subtask name from xml: ", name)
+            predList = []
+            for pred in xmlTask.iter("prev"):
+                predID=pred.get("id")
+                #print("     Pred: ", predID)
+                predList.append(predID)
+            #end for pred
+            #do I really want to have name as both an attribute and the key?
+            #print("Creating protoTask ", name)
+            #print("with predList ", predList)
+            self.protoTaskDict[name]=protoTask(name, predList)
+        #end for subtask in root
+        #topologically sort proto tasks into real tasks
+        for n in self.protoTaskDict.keys():
+            #create tasks and add to allTasks in topological order
+            self.visit(self.protoTaskDict[n])
+
+        #Add in paired
+        # read in cost file (csv)
+        with open(smtCostFile) as f:
+            myReader = csv.reader(f)
+            # skip the header row and count the columns
+
+            headers = next(myReader)
+            columns = len(headers)
+            assert(columns>0)
+            #print("Headers from baseline: ", headers)
+            if self.excludePrinters:
+                for h in headers:
+                    if "print" in h:
+                        headers.remove(h)
+                        columns -=1
+                
+            
+            
+            for i in range(0, columns):
+                headers[i]=headers[i].strip(" ")
+            
+            dataByRows=[]
+            #print(dataByColumns)
+            #print(headers)
+            #print("# of columns=", columns)
+            # next(myReader) # i think this was bc of double header in baseline file?
+            #print("Iterating through baseline file by row.")
+            for row in myReader:
+                newrow = []
+                for entry in row:
+                    newrow.append(int(entry))
+                if len(newrow)==0: continue
+                dataByRows.append(newrow)
+            print(dataByRows)
+        #don't need the file open anymore
+
+        #Get solo costs
+        with open(baselineCostFile) as f:
+            myReader = csv.reader(f)
+            # skip the header row and count the columns
+            # headers will be the same between this file and the smt cost
+            # next(myReader) no headers
+            #columns = len(headers)
+            #print("headers: ", headers)
+            
+            baselines=[]
+            
+            for row in myReader:
+                #print(row)
+                baselines.append(int(row[0]))
+
+        # next Sims finds duplicate columns, don't think this should be a probelm
+
+        # find the max for all values
+        # assign to task with matching name in allTasks (ignore __ and following)
+        # should be a way to reduce the amount of string matching needed here
+        for t1 in self.allTasks:
+            t1.allCosts=[None]*self.nTotal
+        
+        for t1 in self.allTasks:
+            # get only the part of the name that come before the "__"
+            i=t1.name.find('__')
+            if i>=0:
+                shortName1 = t1.name[:i]
+            else:
+                shortName1=t1.name
+            #print("t1.name: ", t1.name)
+            #print("shortName1: ", shortName1)
+            #print()
+            #find the header that matches shortName
+            index1 = headers.index(shortName1)
+            #print(t1.allCosts[t1.permID])
+            #print(max(dataByColumns[index1]))
+            
+            #problem: all costs is not defined
+            #t1.allCosts=[None]*self.nTotal
+
+            infl = 1
+            
+            t1.cost = t1.allCosts[t1.permID] = math.ceil(baselines[index1]*infl)
+            self.totalCost = self.totalCost + t1.cost
+
+            for i in range(t1.permID + 1, self.nTotal):
+                t2 = self.allTasks[i]
+                j=t2.name.find('__')
+                if j>=0:
+                    shortName2 = t2.name[:j]
+                else:
+                    shortName2=t2.name
+        
+                index2 = headers.index(shortName2)
+
+                #t2.cost = t2.allCosts[t2.permID] = 
+
+                t1.allCosts[t2.permID]=math.ceil(dataByRows[index1][index2]*infl)
+                t2.allCosts[t1.permID]=math.ceil(dataByRows[index2][index1]*infl)
+            
+
+            print("[",t1.permID,"]",shortName1,t1.allCosts)
+
+            #either way, calculate length
+            #relies on tasks being topologically ordered
+            #minFinish and minStart both default to 0
+            self.length=0
+            for t in self.allTasks:
+                for pred in t.predList:
+                    t.minStart=max(t.minStart, self.allTasks[pred].minFinish)
+                t.minFinish=t.minStart + t.cost
+                self.length=max(t.minFinish, self.length)
+
+            # we're going to want to try some different deadlines
+            # pseudo deadline should be a solver param, not a dag param
+            # 
+            self.deadline=self.length
+
+        print("length:",self.length)
+        print("total cost:",self.totalCost)
+
+
+
+
     def buildDagFromFiles(self, predConstraintsFile, baselineCostFile, smtCostFile, deadline):
         self.protoTaskDict={}
         
@@ -601,10 +751,13 @@ class subTask:
         self.predList=[]
         self.name=""
 
+        self.minStart=0
+        self.minFinish=0
+
 
 '''
     def __str__(self):
-        return "τ{0}: ({1:0.2f}U, {2:0.0f}T, {3})".format(self.permID, self.util, self.period, str(self.symAdj))
+        return "tau{0}: ({1:0.2f}U, {2:0.0f}T, {3})".format(self.permID, self.util, self.period, str(self.symAdj))
 
     def __repr__(self):
         return self.__str__()
@@ -666,6 +819,9 @@ def printToCSV():
     
     '''
 
+def ns2ms(ns):
+    return int(math.ceil(ns/1000/1000))
+
 def main():
     #parameterrs for testing
     #targetUtil=16
@@ -687,7 +843,8 @@ def main():
     targetCost=5000
     minCost=5
     maxCost=15
-    deadline=74000
+    deadline=4891667013
+              
     
     #Idea: use binary search deadline to find pseudoDeadline in range(
     #crit path, trueDeadline)
@@ -708,7 +865,8 @@ def main():
     All this is doing right now is reading the xml file and then
     printing out names and predecessors.
     '''
-    myDAG.buildDagFromFiles("FFT2-NoPrint.xml", "NoSMT-50-NoPrint.csv", "SMT-50-NoPrint.csv", 0)
+    #myDAG.buildDagFromFiles("FFT2-NoPrint.xml", "NoSMT-50-NoPrint.csv", "SMT-50-NoPrint.csv", 0)
+    myDAG.buildDagFromFilesSB_VBS("smalltest-SD-VBS.xml","sd-vbs-solo-costs.csv","sd-vbs-paired-costs.csv")
     myDAG.printDag()
     
     '''
@@ -730,7 +888,11 @@ def main():
         task2=myDAG.allTasks[p[1]]
         myDAG.pairList.append(taskPair(task1, task2))
     scheduled=False
+
+    # set these as desired:
     cores=1
+    iterations_for_script = 1 # doesnt impact this script but affects tasket run script's number of iterations
+
     # could streamline this by getting/ calculating the width
     
     # Now that we have the pairs, compute a schedule using Graham's list.
@@ -741,16 +903,42 @@ def main():
         if scheduled: 
             print("Cores needed: ", cores)
             schedByCore=result[1]
+            runId = 1
+            finish = 0
             for c in range(cores):
-                print("Pairs on core ", c)
+                #print("Pairs on core ", c)
+                for p in schedByCore[c]:
+                    #print(p.IDs[0], p.IDs[1], "start=", p.start, "finish=", 
+                    #      max(p.finish[0], p.finish[1]))
+                    t1 = myDAG.allTasks[p.IDs[0]]
+                    t2 = myDAG.allTasks[p.IDs[1]]
+                    i=t1.name.find('__')
+                    if i>=0:
+                        shortName1 = t1.name[:i]
+                    else:
+                        shortName1=t1.name
+                    i=t2.name.find('__')
+                    if i>=0:
+                        shortName2 = t2.name[:i]
+                    else:
+                        shortName2=t2.name
+                    if p.IDs[0]==p.IDs[1]:
+                        print(str(0)+", "+shortName1+", "+str(t1.name)+", "+str(iterations_for_script)+", "+str(c+1)+", "+str(runId)+", "+str(1)+", "+str(ns2ms(deadline))+", "+str(1)+", "+str(ns2ms(p.start)))
+                    else: # paired
+                        print(str(1)+", "+shortName1+", "+str(t1.name)+", "+str(iterations_for_script)+", "+str(c+1)+", "+str(runId)+", "+str(1)+", "+str(ns2ms(deadline))+", "+str(1)+", "+str(ns2ms(p.start))+", "+shortName2+", "+str(t2.name))
+                    runId=runId+1
+                    finish = max(finish,p.finish[0])
+                    finish = max(finish,p.finish[1])
+            print("finished at",finish)
+            for c in range(cores):
                 for p in schedByCore[c]:
                     print(p.IDs[0], p.IDs[1], "start=", p.start, "finish=", 
                           max(p.finish[0], p.finish[1]))
-                print()
                 
         cores+=1
         # end while
-    if not scheduled: print("DAG infeasible.")
+    if not scheduled: print("DAG infeasible with",myDAG.nTotal," cores.")
+
     
     # output C code that implements the schedule computed above.
     
