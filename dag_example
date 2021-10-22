@@ -1,0 +1,4 @@
+1, mser_qcif, mser001, 5, 1, 1, 1, 100, 1, 0, sift_qcif, sift001
+0, mser_qcif, mser002, 3, 2, 2, 1, 10, 1, 0
+1, svm_qcif, svm001, 6, 2, 3, 1, 50, 1, 0, localization_qcif, localization001
+0, tracking_qcif, tracking001, 3, 3, 4, 1, 20, 1, 17
