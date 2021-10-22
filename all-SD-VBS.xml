@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<appl>
+    <tasks>
+        <task id="disparity_qcif">
+        </task>
+        <task id="localization_qcif">
+        </task>
+        <task id="mser_qcif">
+        </task>
+        <task id="multi_ncut_qcif">
+        </task>
+        <task id="sift_qcif">
+        </task>
+        <task id="stitch_qcif">
+        </task>
+        <task id="svm_qcif">
+        </task>
+        <task id="texture_synthesis_qcif">
+        </task>
+        <task id="tracking_qcif">
+        </task>
+    </tasks>
+</appl>

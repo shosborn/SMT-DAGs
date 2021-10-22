@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<appl>
+    <tasks>
+        <task id="disparity_qcif__node1">
+        </task>
+        <task id="localization_qcif__node1">
+            <prev id="disparity_qcif__node1"/>
+        </task>
+        <task id="mser_qcif__node1">
+            <prev id="disparity_qcif__node1"/>
+        </task>
+        <task id="multi_ncut_qcif__node1">
+            <prev id="localization_qcif__node1"/>
+            <prev id="mser_qcif__node1"/>
+        </task>
+
+        <task id="disparity_qcif__node2">
+        </task>
+        <task id="localization_qcif__node2">
+            <prev id="disparity_qcif__node2"/>
+        </task>
+        <task id="mser_qcif__node2">
+            <prev id="disparity_qcif__node2"/>
+        </task>
+        <task id="multi_ncut_qcif__node2">
+            <prev id="localization_qcif__node2"/>
+            <prev id="mser_qcif__node2"/>
+        </task>
+
+        <task id="disparity_qcif__node3">
+        </task>
+        <task id="localization_qcif__node3">
+            <prev id="disparity_qcif__node3"/>
+        </task>
+        <task id="mser_qcif__node3">
+            <prev id="disparity_qcif__node3"/>
+        </task>
+        <task id="multi_ncut_qcif__node3">
+            <prev id="localization_qcif__node3"/>
+            <prev id="mser_qcif__node3"/>
+        </task>
+
+        <task id="disparity_qcif__node4">
+        </task>
+        <task id="localization_qcif__node4">
+            <prev id="disparity_qcif__node4"/>
+        </task>
+        <task id="mser_qcif__node4">
+            <prev id="disparity_qcif__node4"/>
+        </task>
+        <task id="multi_ncut_qcif__node4">
+            <prev id="localization_qcif__node4"/>
+            <prev id="mser_qcif__node4"/>
+        </task>
+    </tasks>
+</appl>
