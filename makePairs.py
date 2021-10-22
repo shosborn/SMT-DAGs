@@ -23,16 +23,17 @@ class makePairs:
      
     def setSolverParams(self):
         #taskSystem=self.taskSystem
-        self.solver.setParam("TimeLimit", self.dag.timeout)
-        self.solver.setParam("SolutionLimit", self.dag.solutionLimit)
-        self.solver.setParam(GRB.Param.Threads, self.dag.threadsPerTest)
+        #self.solver.setParam("TimeLimit", timeLimit)
+        #self.solver.setParam("SolutionLimit", solutionLimit)
+        #self.solver.setParam(GRB.Param.Threads, threadsPerTest)
         #For fastest peformance, set lb=ub=1
-        coreLB=1
+        #coreLB=1
         #coreUB=(self.dag.totalCost/self.dag.deadline)*2 + 1
-        coreUB=100
+        #coreUB=100
         #self.varCoreCount=self.solver.addVar(lb=coreLB, ub=coreUB, vtype=GRB.INTEGER)
         #self.solver.setObjective(self.varCoreCount, GRB.MINIMIZE)
-        self.varTotalCost=self.solver.addVar(vtype=GRB.INTEGER)
+        #self.varTotalCost=self.solver.addVar(vtype=GRB.INTEGER)
+        self.varTotalCost=self.solver.addVar()
         self.solver.setObjective(self.varTotalCost, GRB.MINIMIZE)
     
     def schedule(self):
@@ -54,8 +55,10 @@ class makePairs:
         print("End of solution")
 
     def evaluateSchedVar(self, schedVar):
-        if schedVar.x==1: return True
-        else: return False
+        #if schedVar.x==1: return True
+        #else: return False
+        #rounding is necessary because Gurobi doesn't really deal in booleans
+        return round(schedVar.x)
         
     '''
     def pairList(self):
@@ -82,10 +85,13 @@ class makePairs:
         
         #this line works
         #resultDF = self.schedVarsP[self.schedVarsP['result'] == True][['taskID_1', 'taskID_2']]
-        if length=='short':
+        if length=='all':
+            resultDF = self.schedVarsP[['taskID_1', 'taskID_2', 'result']]
+        
+        elif length=='short':
             resultDF = self.schedVarsP[(self.schedVarsP['result'] == True)
                                    ][['taskID_1', 'taskID_2']]
-        else:
+        elif length=='long':
             resultDF = self.schedVarsP[(self.schedVarsP['result'] == True)
                                    ][['taskID_1', 'taskID_2', 'costVar', 'startVar', 'finishVar1', 'finishVar2']]
         #print(resultDF)
@@ -136,11 +142,15 @@ class makePairs:
                 maxCost=max(subTask1.allCosts[j], subTask2.allCosts[i])
                 
                 var = self.solver.addVar(lb=0, ub=1, vtype=GRB.BINARY)
-                costVar=self.solver.addVar(vtype=GRB.INTEGER)
+                #costVar=self.solver.addVar(vtype=GRB.INTEGER)
+                costVar=self.solver.addVar()
                 self.solver.addConstr(lhs=costVar, rhs=var*maxCost, sense=GRB.EQUAL)
-                startVar=self.solver.addVar(lb=0, ub=deadline, vtype=GRB.INTEGER)
-                finishVar1=self.solver.addVar(lb=0, ub=deadline, vtype=GRB.INTEGER)
-                finishVar2=self.solver.addVar(lb=0, ub=deadline, vtype=GRB.INTEGER)
+                #startVar=self.solver.addVar(lb=0, ub=deadline, vtype=GRB.INTEGER)
+                #finishVar1=self.solver.addVar(lb=0, ub=deadline, vtype=GRB.INTEGER)
+                #finishVar2=self.solver.addVar(lb=0, ub=deadline, vtype=GRB.INTEGER)
+                startVar=self.solver.addVar(lb=0, ub=deadline)
+                finishVar1=self.solver.addVar(lb=0, ub=deadline)
+                finishVar2=self.solver.addVar(lb=0, ub=deadline)
                 
                 self.schedVars['taskID_1'].append(i)
                 self.schedVars['taskID_2'].append(j)
@@ -190,8 +200,12 @@ class makePairs:
             #for each row in schedVars i
             for k in range(schedVars_I.shape[0]):
                 exprTaskScheduled+=schedVars_I['schedVar'].iloc[k]
+                #print("Adding to exprTaskScheduled.")
+                #print(schedVars_I['taskID_1'].iloc[k])
+                #print(schedVars_I['taskID_2'].iloc[k])
             #end k loop
             self.solver.addConstr(lhs=exprTaskScheduled, rhs=1, sense=GRB.EQUAL)
+            #print("Require ", i, " is scheduled.")
         #end i loop
         
         #determine costs
@@ -226,8 +240,12 @@ class makePairs:
                         #self.solver.addConstr(lhs=startVar, rhs=finishVar2*schedVar, sense=GRB.GREATER_EQUAL)
                         self.solver.addConstr(lhs=startVar, rhs=finishVar2, sense=GRB.GREATER_EQUAL)
          
-
-
+    def changeDeadline(self, deadline):
+        for k in range(self.schedVarsP.shape[0]):
+            self.schedVarsP['finishVar1'].iloc[k].ub=deadline
+            self.schedVarsP['finishVar2'].ub=deadline
+            self.schedVarsP['startVar'].ub=deadline
+        
 
 
  
