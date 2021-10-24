@@ -540,7 +540,8 @@ class dagTask:
                         # returns a tuple (minMult, maxMult)
                         multiplier=self.smtMultiplier()
                         highPairCost=maxCost+multiplier[1]*minCost
-                        lowPairCost=min(highPairCost, minCost*multiplier[0])
+                        #lowPairCost=min(highPairCost, minCost*multiplier[0])
+                        lowPairCost=min(highPairCost, minCost + multiplier[0]*minCost)
                     
                     #allows each task to have a seperate cost
                     #will be important once we bring in precedence constraints
@@ -558,7 +559,8 @@ class dagTask:
         dist=self.smtDist
 
         if dist==constants.OPTIMIST:
-            minMult=uniform(1, 1.8)
+            #minMult=uniform(1, 1.8)
+            minMult=gauss(0.34, 0.2)
             #based on DIS results in SMT + MC^2
             maxMult=gauss(0.34, 0.2)
 
@@ -567,7 +569,8 @@ class dagTask:
             if uniform(0, 1)<0.05:
                 minMult=maxMult=10
             else:
-                minMult=uniform(1.1, 1.8)
+                #minMult=uniform(1.1, 1.8)
+                minMult=gauss(0.52, 0.17)
                 maxMult=gauss(.52, .17)
 
         elif dist==constants.PESSIMIST:
@@ -575,11 +578,13 @@ class dagTask:
             if uniform(0, 1)<0.2:
                 minMult=maxMult=10
             else: 
-                minMult=uniform(1, 2)
+                #minMult=uniform(1, 2)
+                minMult=gauss(0.6, 0.07)
                 maxMult=gauss(.6, .07)
         #negative results are illogical
         #follows from previous work
         maxMult=max(maxMult, 0.01)
+        minMult=max(minMult, 0.01)
         return(minMult, maxMult)
         
     #no pairs, i.e. each task paired with itself
