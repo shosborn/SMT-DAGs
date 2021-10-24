@@ -8,6 +8,7 @@ Created on Thu Oct 17 08:53:41 2019
 
 # need to have a fully defined DAG before this can run.
 
+import rtasConstants as constants
 from gurobipy import *
 #from random import random, gauss, uniform, choice
 import pandas as pd
@@ -18,24 +19,21 @@ class makePairs:
     def __init__(self, dag):
         self.solver=Model("qcp")
         self.dag=dag
+        self.maxDist=1000000
         
     #print("Testing if arguments work.")
     #print(taskSystem.allTasks[1].allCosts[5])
      
-    def setSolverParams(self):
+    def setSolverParams(self, threadsPerDAG, maxSol, maxDist):
         #taskSystem=self.taskSystem
         #self.solver.setParam("TimeLimit", timeLimit)
-        #self.solver.setParam("SolutionLimit", solutionLimit)
-        #self.solver.setParam(GRB.Param.Threads, threadsPerTest)
-        #For fastest peformance, set lb=ub=1
-        #coreLB=1
-        #coreUB=(self.dag.totalCost/self.dag.deadline)*2 + 1
-        #coreUB=100
-        #self.varCoreCount=self.solver.addVar(lb=coreLB, ub=coreUB, vtype=GRB.INTEGER)
-        #self.solver.setObjective(self.varCoreCount, GRB.MINIMIZE)
-        #self.varTotalCost=self.solver.addVar(vtype=GRB.INTEGER)
+        self.solver.setParam("SolutionLimit", maxSol)
+        # 0 --> Let Gurobi decide
+        self.solver.setParam(GRB.Param.Threads, threadsPerDAG)
+        self.solver.setParam
         self.varTotalCost=self.solver.addVar()
         self.solver.setObjective(self.varTotalCost, GRB.MINIMIZE)
+        self.maxDist=maxDist
     
     def schedule(self):
         self.setSolverParams()
@@ -138,7 +136,10 @@ class makePairs:
                 
                 #code will be more efficient if I can avoid creating vars
                 #for precedence-constrainted subtasks
-                if i in subTask2.predList or j in subTask1.predList:
+                if (i in subTask2.predList or 
+                    j in subTask1.predList or
+                    i-j>self.maxDist or
+                    j-i>self.maxDist):
                     continue
                 maxCost=max(subTask1.allCosts[j], subTask2.allCosts[i])
                 
