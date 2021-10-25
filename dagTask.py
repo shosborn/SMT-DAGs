@@ -6,7 +6,7 @@ import csv
 import copy
 
 from gurobipy import *
-from random import random, gauss, uniform, choice
+from random import random, gauss, uniform, choice, sample
 #from numpy.random import lognormal
 #import numpy as np
 import pandas as pd
@@ -44,7 +44,7 @@ class dagTask:
                                        timeout, solutionLimit, threadsPerTest,
                                        excludePrinters):
     '''    
-    def __init__(self, fileName="random", targetNodeCount=0, targetCost=0, nodeUtilDist=-1, smtDist=-1, erdoRenyiP=0):
+    def __init__(self, fileName="random", targetNodeCount=0, targetCost=0, nodeUtilDist=-1, smtDist=-1, erdoRenyiP=0, numLayers=0):
 
         #timeout, solutionLimit, and threadCount shouldn't be solverParams
 
@@ -77,7 +77,11 @@ class dagTask:
             self.assignPairCosts()
 
             #add precedence constraints
-            self.ErdoRenyiCreateDag(erdoRenyiP)
+            if numLayers==0:
+                self.ErdoRenyiCreateDag(erdoRenyiP)
+            else:
+                p=erdoRenyiP
+                self.layeredDag(p, numLayers)
         # end of if fileName="random"
 
         else:
@@ -508,7 +512,31 @@ class dagTask:
         # end of time loop
 
 
-
+    def layeredDag(self, p, numLayers):
+        # assign tasks to layers while maintaining topological sort
+        '''
+        Each layer is equal?
+        Pick k-1 randoms from range to be the breakpoint?
+        '''
+        maxLayerIndices=sample(range(self.nTotal), numLayers-1)
+        maxLayerIndices.sort()
+        maxLayerIndices.append(self.nTotal) #last layer always ends with the last task
+        
+        #divide tasks into layers
+        curLayer=0
+        for i in range(self.nTotal):
+            if i> maxLayerIndices[curLayer]:
+                curLayer+=1
+            self.allTasks[i].layer=curLayer
+            
+        #add precedence constraints
+        for i in range(self.nTotal):
+            for j in range(i):
+                if self.allTasks[j].layer < self.allTasks[i].layer:
+                    if random()<p:
+                        self.allTasks[i].predList.append(j)
+        
+                
 
 
     def ErdoRenyiCreateDag(self, p):
@@ -674,6 +702,7 @@ class subTask:
         self.mark=0
         self.minStart=0
         self.minFinish=0
+        self.layer=0 #used when building DAGs using the layer method
 
 
 
