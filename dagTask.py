@@ -86,7 +86,7 @@ class dagTask:
             self.allTasks=[]
             self.totalCost = 0
             self.nTotal=0
-            self.buildDagFromFilesSB_VBS("smalltest-SD-VBS.xml","sd-vbs-solo-costs.csv","sd-vbs-paired-costs.csv")
+            self.buildDagFromFilesSB_VBS("casestudy-DAG1.xml","sd-vbs-solo-costs.csv","sd-vbs-paired-costs.csv")
 
         #either way, calculate length
         #relies on tasks being topologically ordered
@@ -102,6 +102,7 @@ class dagTask:
         # pseudo deadline should be a solver param, not a dag param
         # 
         self.deadline=self.length    
+        print("length",self.length,"totalCost",self.totalCost, self.totalCost/self.length)
 
     
     def buildDagFromFilesSB_VBS(self, predConstraintsFile, baselineCostFile, smtCostFile):
@@ -208,7 +209,7 @@ class dagTask:
             #problem: all costs is not defined
             #t1.allCosts=[None]*self.nTotal
 
-            infl = 1.5
+            infl = 1
             
             t1.cost = t1.allCosts[t1.permID] = math.ceil(baselines[index1]*infl)
             self.totalCost = self.totalCost + t1.cost
@@ -227,9 +228,18 @@ class dagTask:
 
                 t1.allCosts[t2.permID]=math.ceil(dataByRows[index1][index2]*infl)
                 t2.allCosts[t1.permID]=math.ceil(dataByRows[index2][index1]*infl)
-            
 
-            print("[",t1.permID,"]",shortName1,t1.allCosts)
+            for i in range(self.nTotal):
+                t2 = self.allTasks[i]
+                j=t2.name.find('__')
+                if j>=0:
+                    shortName2 = t2.name[:j]
+                else:
+                    shortName2=t2.name
+        
+                index2 = headers.index(shortName2)
+                print(shortName1,shortName2, t1.allCosts[t2.permID])
+            #print("[",t1.permID,"]",shortName1,t1.allCosts)
 
             #either way, calculate length
             #relies on tasks being topologically ordered
@@ -540,7 +550,7 @@ class dagTask:
             print("predList: ", task.predList)
             print()
             
-    def schedulePairs(self, totalCores, waitingList, r):
+    def schedulePairs(self, totalCores, waitingList, r, pseudoDeadline):
         #waitingList = self.pairList
         readyList = []
         runningList = []
@@ -551,7 +561,7 @@ class dagTask:
         
         time=0
         coresUsed=0
-        deadline=self.deadline
+        deadline=pseudoDeadline
         
         '''
         print("Initial waiting list: ")
@@ -925,12 +935,12 @@ def main():
     # set these as desired:
     #cores=1
     deadline = myDAG.deadline
-    iterations_for_script = 1 # doesnt impact this script but affects tasket run script's number of iterations
+    iterations_for_script = "iter" # doesnt impact this script but affects tasket run script's number of iterations
 
     # could streamline this by getting/ calculating the width
     
     
-    deadlineMultiples=[1]#, 1.5, 2]
+    deadlineMultiples=[2]
     
     for d in deadlineMultiples:
         pseudoDeadline=myDAG.deadline*d
@@ -939,7 +949,7 @@ def main():
         pairs.changeDeadline(pseudoDeadline)
     
         pairs.solver.optimize()
-        pairs.printSolution('short')
+        pairs.printSolution('long')
         pairIDList=pairs.getPairList()
         myDAG.pairList=[]
         for p in pairIDList:
@@ -957,7 +967,7 @@ def main():
         while not scheduled and cores <=myDAG.nTotal:
             # debug code: just check the last loop
             #cores=myDAG.nTotal
-            result=myDAG.schedulePairs(cores, copy.copy(myDAG.pairList), True)
+            result=myDAG.schedulePairs(cores, copy.copy(myDAG.pairList), True, pseudoDeadline)
             scheduled=result[0]
             print("Deadline: ", myDAG.deadline)
             if scheduled: 

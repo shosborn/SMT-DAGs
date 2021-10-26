@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<appl>
+    <tasks>
+        <task id="mser_qcif__A">
+        </task>
+        <task id="localization_qcif__B">
+          <prev id="mser_qcif__A"/>
+        </task>
+        <task id="stitch_qcif__C">
+          <prev id="mser_qcif__A"/>
+        </task>
+        
+    </tasks>
+</appl>
