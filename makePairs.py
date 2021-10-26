@@ -243,8 +243,8 @@ class makePairs:
     def changeDeadline(self, deadline):
         for k in range(self.schedVarsP.shape[0]):
             self.schedVarsP['finishVar1'].iloc[k].ub=deadline
-            self.schedVarsP['finishVar2'].ub=deadline
-            self.schedVarsP['startVar'].ub=deadline
+            self.schedVarsP['finishVar2'].iloc[k].ub=deadline
+            self.schedVarsP['startVar'].iloc[k].ub=deadline
         
 
 

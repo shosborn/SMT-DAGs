@@ -86,7 +86,8 @@ class dagTask:
             self.allTasks=[]
             self.totalCost = 0
             self.nTotal=0
-            self.buildDagFromFilesSB_VBS("casestudy-DAG1.xml","sd-vbs-solo-costs.csv","sd-vbs-paired-costs.csv")
+            #self.buildDagFromFilesSB_VBS("casestudy-DAG1.xml","sd-vbs-solo-costs.csv","sd-vbs-paired-costs.csv")
+            self.buildDagFromFilesSB_VBS("test-dag.xml","test-solo.csv","test-paired.csv")
 
         #either way, calculate length
         #relies on tasks being topologically ordered
@@ -969,7 +970,7 @@ def main():
             #cores=myDAG.nTotal
             result=myDAG.schedulePairs(cores, copy.copy(myDAG.pairList), True, pseudoDeadline)
             scheduled=result[0]
-            print("Deadline: ", myDAG.deadline)
+            #print("Deadline: ", myDAG.deadline)
             if scheduled: 
                 print("Cores needed: ", cores)
                 if cores>14:
