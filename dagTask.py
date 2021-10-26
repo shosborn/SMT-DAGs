@@ -87,7 +87,7 @@ class dagTask:
             self.totalCost = 0
             self.nTotal=0
             #self.buildDagFromFilesSB_VBS("casestudy-DAG1.xml","sd-vbs-solo-costs.csv","sd-vbs-paired-costs.csv")
-            self.buildDagFromFilesSB_VBS("test-dag.xml","test-solo.csv","test-paired.csv")
+            self.buildDagFromFilesSB_VBS("casestudy-DAG1.xml","sd-vbs-solo-costs.csv","sd-vbs-paired-costs.csv")
 
         #either way, calculate length
         #relies on tasks being topologically ordered
@@ -941,7 +941,7 @@ def main():
     # could streamline this by getting/ calculating the width
     
     
-    deadlineMultiples=[2]
+    deadlineMultiples=[1,1.5,2]
     
     for d in deadlineMultiples:
         pseudoDeadline=myDAG.deadline*d
