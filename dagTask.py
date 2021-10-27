@@ -87,7 +87,8 @@ class dagTask:
             self.totalCost = 0
             self.nTotal=0
             #self.buildDagFromFilesSB_VBS("casestudy-DAG1.xml","sd-vbs-solo-costs.csv","sd-vbs-paired-costs.csv")
-            self.buildDagFromFilesSB_VBS("casestudy-DAG1.xml","sd-vbs-solo-costs.csv","sd-vbs-paired-costs.csv")
+            self.caseStudyId = 3
+            self.buildDagFromFilesSB_VBS("casestudy-DAG"+str(self.caseStudyId)+".xml","sd-vbs-solo-costs.csv","sd-vbs-paired-costs.csv")
 
         #either way, calculate length
         #relies on tasks being topologically ordered
@@ -941,12 +942,15 @@ def main():
     # could streamline this by getting/ calculating the width
     
     
-    deadlineMultiples=[1,1.5,2]
+    #deadlineMultiples=[1,1.2,1.4] #60962775,73155330,85347885 [DAG1] (0 pairs, 1 pair, 2 pairs)
+    #deadlineMultiples=[1,1.1] #43781940,48160134 [DAG2] (0 pairs, 1 pair)
+    deadlineMultiples=[1,1.3,1.5] #81350375,105755488,122025563 [DAG3] (2cores-none, 2cores-some, 1core-all)
     
-    for d in deadlineMultiples:
+    for di in range(len(deadlineMultiples)):
+        d=deadlineMultiples[di]
         pseudoDeadline=myDAG.deadline*d
         print("CHANGING PSEUDO-DEADLINE:")
-        print("pseudo-deadline= ", pseudoDeadline)
+        print("pseudo-deadline= ", pseudoDeadline,d)
         pairs.changeDeadline(pseudoDeadline)
     
         pairs.solver.optimize()
@@ -960,7 +964,7 @@ def main():
         scheduled=False
         #print("pairList: ", myDAG.pairList)
         #minimum number of cores
-        cores=int(myDAG.totalCost/myDAG.deadline)
+        cores=1#int(myDAG.totalCost/myDAG.deadline)
         # could streamline this by getting/ calculating the width
         
         # Now that we have the pairs, compute a schedule using Graham's list.
@@ -981,7 +985,7 @@ def main():
                     for p in schedByCore[c]:
                         print(p.IDs[0], p.IDs[1], "start=", p.start, "finish=", 
                         max(p.finish[0], p.finish[1]))
-                runId = 1
+                
                 finish = 0
                 for c in range(cores):
                     #print("Pairs on core ", c)
@@ -1000,11 +1004,11 @@ def main():
                             shortName2 = t2.name[:i]
                         else:
                             shortName2=t2.name
+                        runId = str(myDAG.caseStudyId)+str(di)+str(p.IDs[0])
                         if p.IDs[0]==p.IDs[1]:
-                            print(str(0)+", "+shortName1+", "+str(t1.name)+", "+str(iterations_for_script)+", "+str(c+1)+", "+str(runId)+", "+str(1)+", "+str(ns2ms(deadline))+", "+str(1)+", "+str(ns2ms(p.start)))
+                            print(str(0)+", "+shortName1+", "+str(t1.name)+", "+str(iterations_for_script)+", "+str(c+1)+", "+str(runId)+", "+str(1)+", "+str(ns2ms(pseudoDeadline))+", "+str(1)+", "+str(ns2ms(p.start))+", "+str(ns2ms(p.costs[0]))+", "+str(ns2ms(p.costs[0])))
                         else: # paired
-                            print(str(1)+", "+shortName1+", "+str(t1.name)+", "+str(iterations_for_script)+", "+str(c+1)+", "+str(runId)+", "+str(1)+", "+str(ns2ms(deadline))+", "+str(1)+", "+str(ns2ms(p.start))+", "+shortName2+", "+str(t2.name))
-                        runId=runId+1
+                            print(str(1)+", "+shortName1+", "+str(t1.name)+", "+str(iterations_for_script)+", "+str(c+1)+", "+str(runId)+", "+str(1)+", "+str(ns2ms(pseudoDeadline))+", "+str(1)+", "+str(ns2ms(p.start))+", "+str(ns2ms(p.costs[0]))+", "+str(ns2ms(p.costs[0]))+", "+shortName2+", "+str(t2.name)+", "+str(ns2ms(p.costs[1]))+", "+str(ns2ms(p.costs[1])))
                         finish = max(finish,p.finish[0])
                         finish = max(finish,p.finish[1])
                     
