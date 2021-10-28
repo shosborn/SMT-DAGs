@@ -33,6 +33,11 @@ New input parameters: numNodes, nodeUtilDistrib, smtDistrib
 New setUp: initialize DAG then build randomly or from files
 
 '''
+
+def ns_ceil_to_ms(ns):
+    return math.ceil(ns/1000000)
+
+
 class dagTask:
     #create task system to approximate a specified total cost with randomly-determined
     #costs, SMT costs, and precedence constraints (from supplied parameters)
@@ -106,7 +111,6 @@ class dagTask:
         self.deadline=self.length    
         print("length",self.length,"totalCost",self.totalCost, self.totalCost/self.length)
 
-    
     def buildDagFromFilesSB_VBS(self, predConstraintsFile, baselineCostFile, smtCostFile):
         self.protoTaskDict={}
         
@@ -211,9 +215,9 @@ class dagTask:
             #problem: all costs is not defined
             #t1.allCosts=[None]*self.nTotal
 
-            infl = 1
+            infl = 1.5
             
-            t1.cost = t1.allCosts[t1.permID] = math.ceil(baselines[index1]*infl)
+            t1.cost = t1.allCosts[t1.permID] = ns_ceil_to_ms(baselines[index1]*infl)
             self.totalCost = self.totalCost + t1.cost
 
             for i in range(t1.permID + 1, self.nTotal):
@@ -228,8 +232,8 @@ class dagTask:
 
                 #t2.cost = t2.allCosts[t2.permID] = 
 
-                t1.allCosts[t2.permID]=math.ceil(dataByRows[index1][index2]*infl)
-                t2.allCosts[t1.permID]=math.ceil(dataByRows[index2][index1]*infl)
+                t1.allCosts[t2.permID]=ns_ceil_to_ms(dataByRows[index1][index2]*infl)
+                t2.allCosts[t1.permID]=ns_ceil_to_ms(dataByRows[index2][index1]*infl)
 
             for i in range(self.nTotal):
                 t2 = self.allTasks[i]
@@ -857,9 +861,6 @@ def printToCSV():
     
     '''
 
-def ns2ms(ns):
-    return int(math.ceil(ns/1000/1000))
-
 def main():
     #parameterrs for testing
     #targetUtil=16
@@ -942,9 +943,15 @@ def main():
     # could streamline this by getting/ calculating the width
     
     
-    #deadlineMultiples=[1,1.2,1.4] #60962775,73155330,85347885 [DAG1] (0 pairs, 1 pair, 2 pairs)
-    #deadlineMultiples=[1,1.1] #43781940,48160134 [DAG2] (0 pairs, 1 pair)
-    deadlineMultiples=[1,1.3,1.5] #81350375,105755488,122025563 [DAG3] (2cores-none, 2cores-some, 1core-all)
+    if myDAG.caseStudyId==1:
+        deadlineMultiples=[1,1.2,1.5] #86,104,129 [DAG1] (0 pairs, 1 pair, 2 pairs)
+    elif myDAG.caseStudyId==2:
+        deadlineMultiples=[1,1.1] #68,75 [DAG2] (0 pairs, 1 pair)
+    elif myDAG.caseStudyId==3:
+        deadlineMultiples=[1,1.3,1.5] #126,164,189 [DAG3] (2cores-none, 2cores-some, 1core-all)
+    else:
+        deadlineMultiples=[1]
+        print("WARNING: INVALID CASE STUDY")
     
     for di in range(len(deadlineMultiples)):
         d=deadlineMultiples[di]
@@ -967,6 +974,8 @@ def main():
         cores=1#int(myDAG.totalCost/myDAG.deadline)
         # could streamline this by getting/ calculating the width
         
+        f = open("sched-"+str(myDAG.caseStudyId)+str(di), 'w+')
+
         # Now that we have the pairs, compute a schedule using Graham's list.
         # this should be its own method
         while not scheduled and cores <=myDAG.nTotal:
@@ -1006,9 +1015,9 @@ def main():
                             shortName2=t2.name
                         runId = str(myDAG.caseStudyId)+str(di)+str(p.IDs[0])
                         if p.IDs[0]==p.IDs[1]:
-                            print(str(0)+", "+shortName1+", "+str(t1.name)+", "+str(iterations_for_script)+", "+str(c+1)+", "+str(runId)+", "+str(1)+", "+str(ns2ms(pseudoDeadline))+", "+str(1)+", "+str(ns2ms(p.start))+", "+str(ns2ms(p.costs[0]))+", "+str(ns2ms(p.costs[0])))
+                            print >>f, str(0)+", "+shortName1+", "+str(t1.name)+", "+str(iterations_for_script)+", "+str(c+1)+", "+str(runId)+", "+str(1)+", "+str(int(pseudoDeadline))+", "+str(1)+", "+str(int(p.start))+", "+str(int(p.costs[0]))+", "+str(int(p.costs[0]))
                         else: # paired
-                            print(str(1)+", "+shortName1+", "+str(t1.name)+", "+str(iterations_for_script)+", "+str(c+1)+", "+str(runId)+", "+str(1)+", "+str(ns2ms(pseudoDeadline))+", "+str(1)+", "+str(ns2ms(p.start))+", "+str(ns2ms(p.costs[0]))+", "+str(ns2ms(p.costs[0]))+", "+shortName2+", "+str(t2.name)+", "+str(ns2ms(p.costs[1]))+", "+str(ns2ms(p.costs[1])))
+                            print >>f, str(1)+", "+shortName1+", "+str(t1.name)+", "+str(iterations_for_script)+", "+str(c+1)+", "+str(runId)+", "+str(1)+", "+str(int(pseudoDeadline))+", "+str(1)+", "+str(int(p.start))+", "+str(int(p.costs[0]))+", "+str(int(p.costs[0]))+", "+shortName2+", "+str(t2.name)+", "+str(int(p.costs[1]))+", "+str(int(p.costs[1]))
                         finish = max(finish,p.finish[0])
                         finish = max(finish,p.finish[1])
                     

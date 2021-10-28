@@ -6,14 +6,14 @@
         <task id="localization_qcif__B">
           <prev id="mser_qcif__A"/>
         </task>
-        <task id="stitch_qcif__C">
+        <task id="disparity_qcif__C">
           <prev id="mser_qcif__A"/>
         </task>
         <task id="svm_qcif__D"> 
           <prev id="localization_qcif__B"/>
         </task>
         <task id="sift_qcif__E">
-          <prev id="stitch_qcif__C"/>
+          <prev id="disparity_qcif__C"/>
         </task>
         <task id="texture_synthesis_qcif__F">
           <prev id="svm_qcif__D"/>
