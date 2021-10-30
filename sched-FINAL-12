@@ -1,0 +1,4 @@
+0, mser_qcif, mser_qcif__A, iter, 1, 120, 1, 94, 1, 0, 5, 5
+1, localization_qcif, localization_qcif__B, iter, 1, 121, 1, 94, 1, 5, 30, 30, disparity_qcif, disparity_qcif__C, 20, 20
+1, svm_qcif, svm_qcif__D, iter, 1, 122, 1, 94, 1, 35, 41, 41, sift_qcif, sift_qcif__E, 53, 53
+0, texture_synthesis_qcif, texture_synthesis_qcif__F, iter, 1, 125, 1, 94, 1, 88, 5, 5

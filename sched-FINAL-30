@@ -1,0 +1,10 @@
+0, texture_synthesis_qcif, texture_synthesis_qcif__A, iter, 1, 300, 1, 93, 1, 0, 5, 5
+0, disparity_qcif, disparity_qcif__B, iter, 1, 305, 1, 93, 1, 5, 14, 14
+0, mser_qcif, mser_qcif__C, iter, 1, 306, 1, 93, 1, 19, 5, 5
+0, localization_qcif, localization_qcif__D, iter, 1, 307, 1, 93, 1, 24, 25, 25
+0, sift_qcif, sift_qcif__E, iter, 1, 308, 1, 93, 1, 49, 39, 39
+0, texture_synthesis_qcif, texture_synthesis_qcif__J, iter, 1, 309, 1, 93, 1, 88, 5, 5
+0, stitch_qcif, stitch_qcif__F, iter, 2, 301, 1, 93, 1, 5, 20, 20
+0, tracking_qcif, tracking_qcif__G, iter, 2, 302, 1, 93, 1, 25, 7, 7
+0, svm_qcif, svm_qcif__H, iter, 2, 303, 1, 93, 1, 32, 28, 28
+0, stitch_qcif, stitch_qcif__I, iter, 2, 304, 1, 93, 1, 60, 20, 20
