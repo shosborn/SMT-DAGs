@@ -1,5 +1,5 @@
-0, tracking_qcif, tracking_qcif__A, iter, 1, 210, 1, 74, 1, 0, 9, 9
-1, mser_qcif, mser_qcif__B, iter, 1, 211, 1, 74, 1, 9, 10, 10, localization_qcif, localization_qcif__C, 34, 34
-0, texture_synthesis_qcif, texture_synthesis_qcif__E, iter, 1, 214, 1, 74, 1, 43, 6, 6
-0, disparity_qcif, disparity_qcif__F, iter, 1, 215, 1, 74, 1, 49, 19, 19
-0, stitch_qcif, stitch_qcif__D, iter, 2, 212, 1, 74, 1, 19, 27, 27
+0, tracking_qcif, tracking_qcif__A, iter, 1, 210, 1, 89, 1, 0, 9, 9
+0, mser_qcif, mser_qcif__B, iter, 1, 211, 1, 89, 1, 9, 7, 7
+1, localization_qcif, localization_qcif__D, iter, 1, 212, 1, 89, 1, 16, 48, 48, stitch_qcif, stitch_qcif__C, 41, 41
+0, texture_synthesis_qcif, texture_synthesis_qcif__E, iter, 1, 214, 1, 89, 1, 64, 6, 6
+0, disparity_qcif, disparity_qcif__F, iter, 1, 215, 1, 89, 1, 70, 19, 19

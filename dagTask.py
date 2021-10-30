@@ -215,7 +215,7 @@ class dagTask:
             #problem: all costs is not defined
             #t1.allCosts=[None]*self.nTotal
 
-            infl = 1.5
+            infl = 1.1
             
             t1.cost = t1.allCosts[t1.permID] = ns_ceil_to_ms(baselines[index1]*infl)
             self.totalCost = self.totalCost + t1.cost
@@ -944,11 +944,11 @@ def main():
     
     
     if myDAG.caseStudyId==1:
-        deadlineMultiples=[1,1.2,1.5] #86,104,129 [DAG1] (0 pairs, 1 pair, 2 pairs)
+        deadlineMultiples=[1,1.2,1.5] #86,104,129 [DAG1] (0 pairs, 1 pair, 2 pairs) ... sched2: 63,76,95
     elif myDAG.caseStudyId==2:
-        deadlineMultiples=[1,1.1] #68,75 [DAG2] (0 pairs, 1 pair)
+        deadlineMultiples=[1,1.3] #69,90 [DAG2] (0 pairs, 1 pair) ... sched2: 51,67
     elif myDAG.caseStudyId==3:
-        deadlineMultiples=[1,1.3,1.5] #126,164,189 [DAG3] (2cores-none, 2cores-some, 1core-all)
+        deadlineMultiples=[1,1.3,1.5] #126,164,189 [DAG3] (2cores-none, 2cores-some, 1core-all) ... sched2: 93,121,140
     else:
         deadlineMultiples=[1]
         print("WARNING: INVALID CASE STUDY")
@@ -974,7 +974,7 @@ def main():
         cores=1#int(myDAG.totalCost/myDAG.deadline)
         # could streamline this by getting/ calculating the width
         
-        f = open("sched-"+str(myDAG.caseStudyId)+str(di), 'w+')
+        f = open("sched-FINAL-"+str(myDAG.caseStudyId)+str(di), 'w+')
 
         # Now that we have the pairs, compute a schedule using Graham's list.
         # this should be its own method
@@ -1018,6 +1018,15 @@ def main():
                             print >>f, str(0)+", "+shortName1+", "+str(t1.name)+", "+str(iterations_for_script)+", "+str(c+1)+", "+str(runId)+", "+str(1)+", "+str(int(pseudoDeadline))+", "+str(1)+", "+str(int(p.start))+", "+str(int(p.costs[0]))+", "+str(int(p.costs[0]))
                         else: # paired
                             print >>f, str(1)+", "+shortName1+", "+str(t1.name)+", "+str(iterations_for_script)+", "+str(c+1)+", "+str(runId)+", "+str(1)+", "+str(int(pseudoDeadline))+", "+str(1)+", "+str(int(p.start))+", "+str(int(p.costs[0]))+", "+str(int(p.costs[0]))+", "+shortName2+", "+str(t2.name)+", "+str(int(p.costs[1]))+", "+str(int(p.costs[1]))
+                        #if p.IDs[0]==p.IDs[1]:
+                        #    print >>f, str(t1.name[-1])+",N/A,"+str(c)+","+str(int(p.start))+","+str(int(p.costs[0]))
+                        #else: # paired
+                        #    minNodeLetter = str(t1.name[-1]) if p.costs[0]<p.costs[1] else str(t2.name[-1])
+                        #    maxNodeLetter = str(t1.name[-1]) if p.costs[0]>=p.costs[1] else str(t2.name[-1])
+                        #    minNodeCostStr = str(int(min(p.costs[0],p.costs[1])))
+                        #    maxNodeCostStr = str(int(max(p.costs[0],p.costs[1])))
+                        #    print >>f, minNodeLetter+","+maxNodeLetter+","+str(c)+","+str(int(p.start))+","+minNodeCostStr+"; "+maxNodeCostStr
+                        
                         finish = max(finish,p.finish[0])
                         finish = max(finish,p.finish[1])
                     

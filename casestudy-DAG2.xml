@@ -6,17 +6,17 @@
         <task id="mser_qcif__B">
           <prev id="tracking_qcif__A"/>
         </task>
-        <task id="localization_qcif__C">
+        <task id="stitch_qcif__C">
           <prev id="tracking_qcif__A"/>
         </task>
-        <task id="stitch_qcif__D"> 
+        <task id="localization_qcif__D"> 
           <prev id="mser_qcif__B"/>
         </task>
         <task id="texture_synthesis_qcif__E">
-          <prev id="localization_qcif__C"/>
+          <prev id="stitch_qcif__C"/>
         </task>
         <task id="disparity_qcif__F">
-          <prev id="stitch_qcif__D"/>
+          <prev id="localization_qcif__D"/>
           <prev id="texture_synthesis_qcif__E"/>
         </task>
     </tasks>
